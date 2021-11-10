@@ -65,7 +65,7 @@ void loop() {
       initConnect4();
     }
     move();
-    if (checkConnect4Vert() || checkConnect4Hor()) {
+    if (checkConnect4()) {
       initConnect4();
     }
     // playConnect4();
@@ -116,7 +116,7 @@ void right() {
       }
       board[position] = pieceColor;
     }
-    digitalWrite(RIGHT_PIN, LOW);
+    // digitalWrite(RIGHT_PIN, LOW);
   }
   right_state[1] = right_state[0];
 }
@@ -132,7 +132,7 @@ void left() {
       }
       board[position] = pieceColor;
     }
-    digitalWrite(LEFT_PIN, LOW);
+    // digitalWrite(LEFT_PIN, LOW);
   }
   left_state[1] = left_state[0];
 }
@@ -170,40 +170,27 @@ void enter() {
 }
 
 
-bool checkConnect4Vert() {
-  int count = 0;
-  for (int i = 7; i <= 63; i += 8) {
-    count = 0;
-    for (int j = i - 7; j < i; j++) {
-      if (player) {
-        if (board[j] == blue) count++;
-        else count = 0;
-      }
-      else {
-        if (board[j] == red) count++;
-        else count = 0;
-      }
-      if (count >= 4) return true;
-    }
-  }
-  return false;
-}
+bool checkConnect4() {
+  int directions[][6] = {{7, 64, 8, 7, 64, 1}, // i value, i max, i iterator, j subtraction, j max subtraction, j iterator
+                        {0, 8, 1, 0, 8, 8},
+                        {0, 4, 1, 0, 9, 9},
+                        {3, 7, 1, 0, 7, 7}};
 
-
-bool checkConnect4Hor() {
-  int count = 0;
-  for (int i = 0; i < 8; i++) {
-    count = 0;
-    for (int j = i; j < 64 - (8 - i); j += 8) {
-       if (player) {
-        if (board[j] == blue) count++;
-        else count = 0;
+  for (int d = 0; d < 4; d++) {
+    int count = 0;
+    for (int i = directions[d][0]; i < directions[d][1]; i += directions[d][2]) {
+      count = 0;
+      for (int j = i - directions[d][3]; j < 64 - (directions[d][4] - i); j += directions[d][5]) {
+         if (player) {
+          if (board[j] == blue) count++;
+          else count = 0;
+        }
+        else {
+          if (board[j] == red) count++;
+          else count = 0;
+        }
+        if (count >= 4) return true;
       }
-      else {
-        if (board[j] == red) count++;
-        else count = 0;
-      }
-      if (count >= 4) return true;
     }
   }
   return false;
