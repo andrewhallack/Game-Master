@@ -12,12 +12,14 @@
 #define UP_PIN      12
 #define DOWN_PIN    13
 #define ENTER_PIN   5
+#define RESET_PIN   7
 
 int right_state[2] = {0, 0};
 int left_state[2] = {0, 0};
 int up_state[2] = {0, 0};
 int down_state[2] = {0, 0};
 int enter_state[2] = {0, 0};
+int reset_state[2] = {0, 0};
 
 Adafruit_NeoPixel strip(LED_COUNT, LED_PIN, NEO_GRB + NEO_KHZ800);
 static uint32_t board[64];
@@ -56,6 +58,9 @@ void setup() {
   pinMode(UP_PIN, INPUT);
   pinMode(DOWN_PIN, INPUT);
   pinMode(ENTER_PIN, INPUT);
+  pinMode(RESET_PIN, INPUT);
+
+  Serial.begin(9600);
 }
 
 
@@ -103,6 +108,7 @@ void move() {
   right();
   left();
   enter();
+  reset();
 }
 
 
@@ -116,7 +122,6 @@ void right() {
       }
       board[position] = pieceColor;
     }
-    // digitalWrite(RIGHT_PIN, LOW);
   }
   right_state[1] = right_state[0];
 }
@@ -132,7 +137,6 @@ void left() {
       }
       board[position] = pieceColor;
     }
-    // digitalWrite(LEFT_PIN, LOW);
   }
   left_state[1] = left_state[0];
 }
@@ -164,17 +168,27 @@ void enter() {
       }
       board[position] = pieceColor;
     }
-    digitalWrite(ENTER_PIN, LOW);
   }
   enter_state[1] = enter_state[0];
+}
+
+
+void reset() {
+  reset_state[0] = digitalRead(RESET_PIN);
+  if (reset_state[0] == HIGH) {
+    if (reset_state[0] != reset_state[1]) {
+      initConnect4();
+    }
+  }
+  reset_state[1] = reset_state[0];
 }
 
 
 bool checkConnect4() {
   int directions[][6] = {{7, 64, 8, 7, 64, 1}, // i value, i max, i iterator, j subtraction, j max subtraction, j iterator
                         {0, 8, 1, 0, 8, 8},
-                        {0, 4, 1, 0, 9, 9},
-                        {3, 7, 1, 0, 7, 7}};
+                        {0, 33, 8, 0, 9, 9},
+                        {7, 40, 8, 0, 7, 7}};
 
   for (int d = 0; d < 4; d++) {
     int count = 0;
