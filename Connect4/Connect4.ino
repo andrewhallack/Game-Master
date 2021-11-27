@@ -3,7 +3,7 @@
 #include <avr/power.h> // Required for 16 MHz Adafruit Trinket
 #endif
 
-
+//Defining global pin Constants
 #define LED_PIN     6
 #define LED_COUNT   64
 
