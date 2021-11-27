@@ -29,8 +29,8 @@ uint32_t red = strip.Color(255, 0, 0);
 uint32_t blue = strip.Color(0, 0, 255);
 uint32_t black = strip.Color(0, 0, 0);
 
-bool selectConnect4 = true;
-bool selectTTT = false;
+bool selectConnect4 = false;
+bool selectTTT = true;
 bool selectReversal = false;
 bool playingConnect4 = false;
 bool playingTTT = false;
@@ -69,11 +69,16 @@ void loop() {
     if(!playingConnect4) {
       initConnect4();
     }
-    move();
+    moveConnect4();
     if (checkConnect4()) {
       initConnect4();
     }
-    // playConnect4();
+  }
+  else if (selectTTT) {
+    if (!playingTTT) {
+      initTTT();
+    }
+    moveTTT();
   }
   render();
 }
@@ -86,6 +91,22 @@ void render() {
   }
 }
 
+
+
+void reset() {
+  reset_state[0] = digitalRead(RESET_PIN);
+  if (reset_state[0] == HIGH) {
+    if (reset_state[0] != reset_state[1]) {
+      initConnect4();
+    }
+  }
+  reset_state[1] = reset_state[0];
+}
+
+
+/*******************************************************/
+//                CONNECT4 FUNCTIONS                   //
+/*******************************************************/
 
 void initConnect4() {
   player = true;
@@ -104,15 +125,15 @@ void initConnect4() {
 }
 
 
-void move() {
-  right();
-  left();
-  enter();
+void moveConnect4() {
+  rightConnect4();
+  leftConnect4();
+  enterConnect4();
   reset();
 }
 
 
-void right() {
+void rightConnect4() {
   right_state[0] = digitalRead(RIGHT_PIN);
   if (right_state[0] == HIGH) {
     if (right_state[0] != right_state[1]) {
@@ -127,7 +148,7 @@ void right() {
 }
 
 
-void left() {
+void leftConnect4() {
   left_state[0] = digitalRead(LEFT_PIN);
   if (left_state[0] == HIGH) {
     if (left_state[0] != left_state[1]) {
@@ -142,7 +163,7 @@ void left() {
 }
 
 
-void enter() {
+void enterConnect4() {
   bool valid = true;
   enter_state[0] = digitalRead(ENTER_PIN);
   if (enter_state[0] == HIGH) {
@@ -173,17 +194,6 @@ void enter() {
 }
 
 
-void reset() {
-  reset_state[0] = digitalRead(RESET_PIN);
-  if (reset_state[0] == HIGH) {
-    if (reset_state[0] != reset_state[1]) {
-      initConnect4();
-    }
-  }
-  reset_state[1] = reset_state[0];
-}
-
-
 bool checkConnect4() {
   int directions[][6] = {{7, 64, 8, 7, 64, 1}, // i value, i max, i iterator, j subtraction, j max subtraction, j iterator
                         {0, 8, 1, 0, 8, 8},
@@ -208,4 +218,106 @@ bool checkConnect4() {
     }
   }
   return false;
+}
+
+
+/*******************************************************/
+//                Tic-Tac-Toe FUNCTIONS                //
+/*******************************************************/
+
+
+void initTTT() {
+  player = true;
+  pieceColor = red;
+  position = 7;
+  for (int i = 7; i < 64; i += 8) {
+    if ((i + 1) % 3 == 0) {
+      for (int j = i - 7; j <= i; j++) {
+        board[j] = white;
+      }
+    }
+    else {
+      for (int j = i - 5; j < i; j += 3) {
+        board[j] = white;
+      }
+    }
+  }
+  TTTpiece(position, pieceColor);
+  playingTTT = true;
+}
+
+
+void TTTpiece(int pos, uint32_t color) {
+  board[position] = color;
+  board[position - 1] = color;
+  board[position + 7] = color;
+  board[position + 8] = color;
+}
+
+
+void moveTTT() {
+  upTTT();
+  downTTT();
+  leftTTT();
+  rightTTT();
+}
+
+
+void upTTT() {
+  up_state[0] = digitalRead(UP_PIN);
+  if (up_state[0] == HIGH) {
+    if (up_state[0] != up_state[1]) {
+      if ((position + 1) % 8 != 0) {
+        TTTpiece(position, black);
+        position += 3;
+      }
+      TTTpiece(position, pieceColor);
+    }
+  }
+  up_state[1] = up_state[0];
+}
+
+
+void downTTT() {
+  down_state[0] = digitalRead(DOWN_PIN);
+  if (down_state[0] == HIGH) {
+    if (down_state[0] != down_state[1]) {
+      if ((position - 1) % 8 != 0) {
+        TTTpiece(position, black);
+        position -= 3;
+      }
+      TTTpiece(position, pieceColor);
+    }
+  }
+  down_state[1] = down_state[0];
+}
+
+
+void leftTTT() {
+  left_state[0] = digitalRead(LEFT_PIN);
+  if (left_state[0] == HIGH) {
+    if (left_state[0] != left_state[1]) {
+      if (position > 7) {
+        TTTpiece(position, black);
+        position -= 24;
+      }
+      TTTpiece(position, pieceColor);
+    }
+  }
+  left_state[1] = left_state[0];
+}
+
+
+void rightTTT() {
+  right_state[0] = digitalRead(RIGHT_PIN);
+  if (right_state[0] == HIGH) {
+    if (right_state[0] != right_state[1]) {
+      if (position < 49) {
+        TTTpiece(position, black);
+        position += 24;
+      }
+      TTTpiece(position, pieceColor);
+    }
+  }
+  right_state[1] = right_state[0];
 }
