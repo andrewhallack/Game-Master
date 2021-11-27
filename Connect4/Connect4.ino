@@ -22,6 +22,7 @@ int enter_state[2] = {0, 0};
 int reset_state[2] = {0, 0};
 
 Adafruit_NeoPixel strip(LED_COUNT, LED_PIN, NEO_GRB + NEO_KHZ800);
+static bool validReversal[64];
 static uint32_t board[64];
 uint32_t yellow = strip.Color(245, 239, 66);
 uint32_t white = strip.Color(255, 255, 255);
@@ -79,6 +80,12 @@ void loop() {
       initTTT();
     }
     moveTTT();
+  }
+  else if (selectReversal) {
+    if (!playingReversal) {
+      initReversal();
+    }
+    moveReversal();
   }
   render();
 }
@@ -320,4 +327,216 @@ void rightTTT() {
     }
   }
   right_state[1] = right_state[0];
+}
+
+
+/******************************************************/
+//                REVERSAL FUNCTIONS                  //
+/******************************************************/
+
+
+void initReversal() {
+  player = true;
+  pieceColor = red;
+  position = 21;
+
+  for (int i = 0; i < sizeof(board) / sizeof(board[0]); i++) {
+    board[i] = white;
+    validReversal[i] = false;
+  }
+
+  board[27] = red;
+  board[36] = red;
+  board[28] = blue;
+  board[35] = blue;
+
+  for (int i = 18; i < 50; i += 8) {
+    for (int j = i; j < i + 4; j++) {
+      if (board[j] == white) {
+        validReversal[j] = true;
+      }
+    }
+  }
+  
+  board[position] = pieceColor;
+  playingReversal = true;
+}
+
+
+void moveReversal() {
+  leftReversal();
+  rightReversal();
+  upReversal();
+  downReversal();
+  enterReversal();
+}
+
+
+void leftReversal() {
+  left_state[0] = digitalRead(LEFT_PIN);
+  if (left_state[0] == HIGH) {
+    if (left_state[0] != left_state[1]) {
+      if (position > 7) {
+        for (int i = position - 8; i > 0; i -= 8) {
+          if (validReversal[i]) {
+            board[position] = white;
+            position = i;
+            board[position] = pieceColor;
+            break;
+          }
+        }
+      }
+    }
+  }
+  left_state[1] = left_state[0];
+}
+
+
+void rightReversal() {
+  right_state[0] = digitalRead(RIGHT_PIN);
+  if (right_state[0] == HIGH) {
+    if (right_state[0] != right_state[1]) {
+      if (position < 56) {
+        for (int i = position + 8; i < 64; i += 8) {
+          if (validReversal[i]) {
+            board[position] = white;
+            position = i;
+            board[position] = pieceColor;
+            break;
+          }
+        }
+      }
+    }
+  }
+  right_state[1] = right_state[0];
+}
+
+
+void upReversal() {
+  up_state[0] = digitalRead(UP_PIN);
+  if (up_state[0] == HIGH) {
+    if (up_state[0] != up_state[1]) {
+      if ((position + 1) % 8 != 0) {
+        for (int i = position + 1;; i += 1) {
+          if ((i + 1) % 8 == 0) break;
+          if (validReversal[i]) {
+            board[position] = white;
+            position = i;
+            board[position] = pieceColor;
+            break;
+          }
+        }
+      }
+    }
+  }
+  up_state[1] = up_state[0];
+}
+
+
+void downReversal() {
+  down_state[0] = digitalRead(DOWN_PIN);
+  if (down_state[0] == HIGH) {
+    if (down_state[0] != down_state[1]) {
+      if (position % 8 != 0) {
+        for (int i = position - 1;; i -= 1) {
+          if (i % 8 == 0) break;
+          if (validReversal[i]) {
+            board[position] = white;
+            position = i;
+            board[position] = pieceColor;
+            break;
+          }
+        }
+      }
+    }
+  }
+  down_state[1] = down_state[0];
+}
+
+
+void enterReversal() {
+  enter_state[0] = digitalRead(ENTER_PIN);
+  if (enter_state[0] == HIGH) {
+    if (enter_state[0] != enter_state[1]) {
+      // change color
+      // set valid squares
+      // place piece on closest valid position
+      
+      player = !player;
+      
+      if (player) {
+        pieceColor = red;
+      }
+      else {
+        pieceColor = blue;
+      }
+      
+      if (position == 0) {
+        if (board[1] == white) validReversal[1] = true;
+        if (board[8] == white) validReversal[8] = true;
+        if (board[9] == white) validReversal[9] = true;
+      }
+      else if (position == 7) {
+        if (board[6] == white) validReversal[6] = true;
+        if (board[14] == white) validReversal[14] = true;
+        if (board[15] == white) validReversal[15] = true;
+      }
+      else if (position == 56) {
+        if (board[48] == white) validReversal[48] = true;
+        if (board[49] == white) validReversal[49] = true;
+        if (board[57] == white) validReversal[57] = true;
+      }
+      else if (position == 63) {
+        if (board[54] == white) validReversal[54] = true;
+        if (board[55] == white) validReversal[55] = true;
+        if (board[62] == white) validReversal[62] = true;
+      }
+      else if ((position + 1) % 8 == 0) {
+        for (int i = position - 8; i <= position + 8; i += 8) {
+          for (int j = i; j >= i - 1; j--) {
+            if (board[j] == white) validReversal[j] = true;
+          }
+        }
+      }
+      else if (position % 8 == 0) {
+        for (int i = position - 8; i <= position + 8; i += 8) {
+          for (int j = i; j <= i + 1; j++) {
+            if (board[j] == white) validReversal[j] = true;
+          }
+        }
+      }
+      else if (position < 7) {
+        for (int i = position - 1; i <= position + 7; i += 8) {
+          for (int j = i; j <= i + 2; j++) {
+            if (board[j] == white) validReversal[j] = true;
+          }
+        }
+      }
+      else if (position > 56) {
+        for (int i = position - 9; i <= position - 1; i += 8) {
+          for (int j = i; j <= i + 2; j++) {
+            if (board[j] == white) validReversal[j] = true;
+          }
+        }
+      }
+      else {
+        for (int i = position - 9; i <= position + 7; i += 8) {
+          for (int j = i; j <= i + 2; j++) {
+            if (board[j] == white) validReversal[j] = true;
+          }
+        } 
+      }
+
+      int prevPosition = position;
+      for (int i = 0; i < 64; i++) {
+        if (board[i] == white && validReversal[i]) {
+          position = i;
+          break;
+        }
+      }
+      validReversal[prevPosition] = false;
+      board[position] = pieceColor;
+    }
+  }
+  enter_state[1] = enter_state[0];
 }
