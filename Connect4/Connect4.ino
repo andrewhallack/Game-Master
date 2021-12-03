@@ -9,10 +9,10 @@
 
 #define RIGHT_PIN   10
 #define LEFT_PIN    11
-#define UP_PIN      12
-#define DOWN_PIN    13
-#define ENTER_PIN   5
-#define RESET_PIN   2
+#define DOWN_PIN    12
+#define UP_PIN      13
+#define ENTER_PIN   9
+#define RESET_PIN   8
 
 int right_state[2] = {0, 0};
 int left_state[2] = {0, 0};
