@@ -12,7 +12,7 @@
 #define UP_PIN      12
 #define DOWN_PIN    13
 #define ENTER_PIN   5
-#define RESET_PIN   7
+#define RESET_PIN   2
 
 int right_state[2] = {0, 0};
 int left_state[2] = {0, 0};
@@ -71,18 +71,12 @@ void loop() {
       initConnect4();
     }
     moveConnect4();
-    if (checkConnect4()) {
-      initConnect4();
-    }
   }
   else if (selectTTT) {
     if (!playingTTT) {
       initTTT();
     }
     moveTTT();
-    if (checkTTT()) {
-      initTTT();
-    }
   }
   else if (selectReversal) {
     if (!playingReversal) {
@@ -108,7 +102,7 @@ void reset() {
   reset_state[0] = digitalRead(RESET_PIN);
   if (reset_state[0] == HIGH) {
     if (reset_state[0] != reset_state[1]) {
-      initConnect4();
+      initTTT();
     }
   }
   reset_state[1] = reset_state[0];
@@ -198,6 +192,7 @@ void enterConnect4() {
       else {
         pieceColor = blue;
       }
+      checkConnect4();
       board[position] = pieceColor;
     }
   }
@@ -224,7 +219,10 @@ bool checkConnect4() {
           if (board[j] == red) count++;
           else count = 0;
         }
-        if (count >= 4) return true;
+        if (count >= 4) {
+          initConnect4();
+          return true;
+        }
       }
     }
   }
@@ -251,6 +249,11 @@ void initTTT() {
       for (int j = i - 5; j < i; j += 3) {
         board[j] = white;
       }
+    }
+  }
+  for (int i = 0; i < 64; i++) {
+    if (board[i] != white) {
+      board[i] = black;
     }
   }
   TTTpiece(position, pieceColor);
@@ -282,7 +285,7 @@ void upTTT() {
       for (int i = position;; i += 3) {
         if (board[i] == black) {
           TTTpiece(position, black);
-          position += 3;
+          position = i;
           break;
         }
         if ((i + 1) % 8 == 0) break;
@@ -301,7 +304,7 @@ void downTTT() {
       for (int i = position;; i -= 3) {
         if (board[i] == black) {
           TTTpiece(position, black);
-          position -= 3;
+          position = i;
           break;
         } 
         if ((i - 1) % 8 == 0) break;
@@ -320,7 +323,7 @@ void leftTTT() {
       for (int i = position; i > 0; i -= 24) {
         if (board[i] == black) {
           TTTpiece(position, black);
-          position -= 24;
+          position = i;
           break;
         }
       }
@@ -343,7 +346,7 @@ void rightTTT() {
       for (int i = position; i < 56; i += 24) {
         if (board[i] == black) {
           TTTpiece(position, black);
-          position += 24;
+          position = i;
           break;
         }
       }
@@ -381,31 +384,39 @@ void enterTTT() {
           }
         }
       }
+      checkTTT();
       TTTpiece(position, pieceColor);
     }
   }
   enter_state[1] = enter_state[0];
-  checkTTT();
 }
 
 
 bool checkTTT() {
   uint32_t prevColor = NULL;
   int count = 1;
-  
-  for (int i = 7; i < 56; i += 24) {
-    prevColor = NULL;
-    count = 1;
-    for (int j = i - 6; j <= i; j += 3) {
-      if (board[j] == black) {
-        break;
-      }
-      if (prevColor && board[j] == prevColor) {
-        count++;
-      }
-      prevColor = board[j];
-      if (count == 3) {
-        return true;
+
+  int directions[][6] = {{7, 56, 24, 6, 0, 3},
+                         {1, 8, 3, 0, 48, 24},
+                         {7, 8, 1, 0, 50, 21},
+                         {1, 2, 1, 0, 54, 27}};
+
+  for (int k = 0; k < 4; k++) {
+    for (int i = directions[k][0]; i < directions[k][1]; i += directions[k][2]) {
+      prevColor = NULL;
+      count = 1;
+      for (int j = i - directions[k][3]; j <= i + directions[k][4]; j += directions[k][5]) {
+        if (board[j] == black) {
+          break;
+        }
+        if (board[j] == prevColor) {
+          count++;
+        }
+        prevColor = board[j];
+        if (count == 3) {
+          initTTT();
+          return true;
+        }
       }
     }
   }
