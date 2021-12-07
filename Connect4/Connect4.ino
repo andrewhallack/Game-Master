@@ -55,7 +55,7 @@ void setup() {
 
   strip.begin();           // INITIALIZE NeoPixel strip object (REQUIRED)
   strip.show();            // Turn OFF all pixels ASAP
-  strip.setBrightness(100); // Set BRIGHTNESS to about 1/5 (max = 255)
+  strip.setBrightness(50); // Set BRIGHTNESS to about 1/5 (max = 255)
 
   pinMode(RIGHT_PIN, INPUT);
   pinMode(LEFT_PIN, INPUT);
@@ -803,6 +803,9 @@ void enterReversal() {
         } 
       }
 
+      flip();
+      checkReversal();
+
       int prevPosition = position;
       for (int i = 0; i < 64; i++) {
         if (board[i] == white && validReversal[i]) {
@@ -817,34 +820,68 @@ void enterReversal() {
   enter_state[1] = enter_state[0];
 }
 
-//void flipReversal(int start)
-//{
-//  int directions[][5] = {{64, 8, 7, 64, 1}, // i max, i iterator, j subtraction, j max subtraction, j iterator
-//                          {8, 1, 0, 8, 8}, 
-//                          {33, 8, 0, 9, 9},
-//                          {40, 8, 0, 7, 7}};
-//
-//  
-//    for (int d = 0; d < 4; d++) {
-//      int count = 0;
-//      for (int i = start; i < directions[d][0]; i += directions[d][1]) {
-//        count = 0;
-//        for (int j = i - directions[d][2]; j < 64 - (directions[d][3] - i); j += directions[d][4]) {
-//           if (player) {
-//            if (board[j] == blue) count++;
-//            else count = 0;
-//          }
-//          else {
-//            if (board[j] == red) count++;
-//            else count = 0;
-//          }
-//          if (count >= 4) {
-//            endScreen(false);
-//            return true;
-//          }
-//        }
-//      }
-//    }
-//    return false;
-//  }
-//}
+
+void flip() {
+  uint32_t curColor = board[position];
+
+  int posDirections[][4] = {{1, position + (8 - position % 8)}, {7, 64}, {8, 64}, {9, 64}};
+  int negDirections[][4] = {{1, position % 8}, {7, position}, {8, position}, {9, position}};
+
+  for (int k = 0; k < 4; k++) {
+    for (int i = position - negDirections[k][0]; i >= position - negDirections[k][1]; i -= negDirections[k][0]) {
+      if (board[i] == curColor) break;
+      if (board[i] == white) {
+        for (int j = i + negDirections[k][0]; j < position; j += negDirections[k][0]) {
+          if (curColor == red) board[j] = blue;
+          else if (curColor == blue) board[j] = red; 
+        }
+        break;
+      }
+      board[i] = curColor;
+    }
+  }
+
+  for (int k = 0; k < 4; k++) {
+    for (int i = position + posDirections[k][0]; i <= posDirections[k][1]; i += posDirections[k][0]) {
+      if (board[i] == curColor) break;
+      if (board[i] == white) {
+        for (int j = i - posDirections[k][0]; j > position; j -= posDirections[k][0]) {
+          if (curColor == red) board[j] = blue;
+          else if (curColor == blue) board[j] = red; 
+        }
+        break;
+      }
+      board[i] = curColor;
+    }
+  }
+}
+
+
+void checkReversal() {
+  int countValid = 0;
+  int redCount = 0;
+  int blueCount = 0;
+  uint32_t endColor;
+  
+  for (int i = 0; i < 64; i++) {
+    if (validReversal[i] == true) {
+      countValid++;
+    }
+    if (board[i] == blue) blueCount++;
+    if (board[i] == red) redCount++;
+  }
+  if (countValid == 0) {
+    if (blueCount > redCount) {
+      endColor = blue;
+    }
+    else if (redCount > blueCount) {
+      endColor = red;
+    }
+    else {
+      endColor = purple;
+    }
+    for (int i = 0; i < 64; i++) {
+      board[i] = endColor;
+    }
+  }
+}
