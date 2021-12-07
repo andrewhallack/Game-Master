@@ -24,14 +24,15 @@ int reset_state[2] = {0, 0};
 Adafruit_NeoPixel strip(LED_COUNT, LED_PIN, NEO_GRB + NEO_KHZ800);
 static bool validReversal[64];
 static uint32_t board[64];
-uint32_t yellow = strip.Color(245, 239, 66);
+uint32_t purple = strip.Color(255, 0, 255);
 uint32_t white = strip.Color(255, 255, 255);
 uint32_t red = strip.Color(255, 0, 0);
 uint32_t blue = strip.Color(0, 0, 255);
 uint32_t black = strip.Color(0, 0, 0);
 
+bool menu = true;
 bool selectConnect4 = false;
-bool selectTTT = true;
+bool selectTTT = false;
 bool selectReversal = false;
 bool playingConnect4 = false;
 bool playingTTT = false;
@@ -41,6 +42,8 @@ static int position = 7;
 
 bool player = true;
 static uint32_t pieceColor;
+int menuOptions = 1;
+
 
 void setup() {
   // These lines are specifically to support the Adafruit Trinket 5V 16 MHz.
@@ -52,7 +55,7 @@ void setup() {
 
   strip.begin();           // INITIALIZE NeoPixel strip object (REQUIRED)
   strip.show();            // Turn OFF all pixels ASAP
-  strip.setBrightness(12); // Set BRIGHTNESS to about 1/5 (max = 255)
+  strip.setBrightness(50); // Set BRIGHTNESS to about 1/5 (max = 255)
 
   pinMode(RIGHT_PIN, INPUT);
   pinMode(LEFT_PIN, INPUT);
@@ -66,7 +69,11 @@ void setup() {
 
 
 void loop() {
-  if (selectConnect4) {
+  if (menu) {
+    initMenu();
+    moveMenu();
+  }
+  else if (selectConnect4) {
     if(!playingConnect4) {
       initConnect4();
     }
@@ -97,15 +104,190 @@ void render() {
 }
 
 
-
 void reset() {
   reset_state[0] = digitalRead(RESET_PIN);
   if (reset_state[0] == HIGH) {
     if (reset_state[0] != reset_state[1]) {
-      initTTT();
+      resetVariables();
     }
   }
   reset_state[1] = reset_state[0];
+}
+
+
+void resetVariables() {
+  menu = true;
+  selectConnect4 = false;
+  selectTTT = false;
+  selectReversal = false;
+  playingConnect4 = false;
+  playingTTT = false;
+  playingReversal = false;
+  menuOptions = 1;
+  initMenu();
+}
+
+
+/*******************************************************/
+//                MENU FUNCTIONS                       //
+/*******************************************************/
+
+
+void initMenu() {
+  if (menuOptions % 3 == 1) {
+    connect4Menu();
+  }
+  else if (menuOptions % 3 == 2) {
+    tttMenu();
+  }
+  else if (menuOptions % 3 == 0) {
+    reversalMenu();
+  }
+}
+
+
+void resetMenu() {
+  for (int i = 0; i < 64; i++) {
+    board[i] = black;
+  }
+}
+
+
+void connect4Menu() {
+  resetMenu();
+  int fourSquares[11] = {20, 21, 22, 28, 36, 41, 42, 43, 44, 45, 46};
+  for (int i = 0; i < 11; i++) {
+    for (int j = 0; j < 64; j++) {
+      if (j == fourSquares[i]) {
+        board[j] = white;
+        continue;
+      }
+      if (board[j] != white && j <= 31) board[j] = red;
+      else if (board[j] != white && j > 31) board[j] = blue;
+    }
+  }
+}
+
+
+void tttMenu() {
+  resetMenu();
+  for (int i = 7; i < 57; i += 7) {
+    board[i] = white;
+  }
+  for (int i = 4; i < 32; i += 9) {
+    board[i] = white;
+  }
+  for (int i = 32; i < 60; i += 9) {
+    board[i] = white;
+  }
+
+  int leftO[12] = {0, 1, 2, 3, 8, 11, 16, 19, 24, 25, 26 ,27};
+  int rightO[12] = {36, 37, 38, 39, 44, 47, 52, 55, 60, 61, 62, 63};
+  for (int i = 0; i < 12; i++) {
+    for (int j = 0; j < 64; j++) {
+      if (j == leftO[i] || j == rightO[i]) {
+        board[j] = white;
+        continue;
+      }
+      if (board[j] != white && j <= 31) board[j] = red;
+      else if (board[j] != white && j > 31) board[j] = blue;
+    }
+  }
+}
+
+
+void reversalMenu() {
+  resetMenu();
+  for (int i = 0; i < 64; i++) {
+    board[i] = white;
+  }
+  
+  board[27] = red;
+  board[36] = red;
+  board[28] = blue;
+  board[35] = blue;
+}
+
+
+void moveMenu() {
+  rightMenu();
+  leftMenu();
+  enterMenu();
+}
+
+
+void rightMenu() {
+  right_state[0] = digitalRead(RIGHT_PIN);
+  if (right_state[0] == HIGH) {
+    if (right_state[0] != right_state[1]) {
+      menuOptions += 1;
+      if (menuOptions > 3) {
+        menuOptions = 1;
+      }
+      Serial.print(menuOptions);
+    }
+  }
+  right_state[1] = right_state[0];
+}
+
+
+void leftMenu() {
+  left_state[0] = digitalRead(LEFT_PIN);
+  if (left_state[0] == HIGH) {
+    if (left_state[0] != left_state[1]) {
+      menuOptions -= 1;
+      if (menuOptions < 1) {
+        menuOptions = 3;
+      }
+      Serial.print(menuOptions);
+    }
+  }
+  left_state[1] = left_state[0];
+}
+
+
+void enterMenu() {
+  enter_state[0] = digitalRead(ENTER_PIN);
+  if (enter_state[0] == HIGH) {
+    if (enter_state[0] != enter_state[1]) {
+      menu = false;
+      for (int i = 0; i < 64; i++) {
+        board[i] = black;
+      }
+      if (menuOptions % 3 == 1) {
+        selectConnect4 = true;
+      }
+      else if (menuOptions % 3 == 2) {
+        selectTTT = true;
+      }
+      else if (menuOptions % 3 == 0) {
+        selectReversal = true;
+      }
+    }
+  }
+  enter_state[1] = enter_state[0];
+}
+
+
+void endScreen(bool tie) {
+  if (tie) {
+    for (int i; i < 64; i++) {
+      board[i] = purple;
+    }
+  }
+  else if (player) {
+    for (int i; i < 64; i++) {
+      board[i] = blue;
+    }
+  }
+  else {
+    for (int i; i < 64; i++) {
+      board[i] = red;
+    }
+  }
+  render();
+  delay(2000);
+  resetVariables();
 }
 
 
@@ -220,7 +402,7 @@ bool checkConnect4() {
           else count = 0;
         }
         if (count >= 4) {
-          initConnect4();
+          endScreen(false);
           return true;
         }
       }
@@ -414,7 +596,7 @@ bool checkTTT() {
         }
         prevColor = board[j];
         if (count == 3) {
-          initTTT();
+          endScreen(false);
           return true;
         }
       }
@@ -511,8 +693,8 @@ void upReversal() {
   if (up_state[0] == HIGH) {
     if (up_state[0] != up_state[1]) {
       if ((position + 1) % 8 != 0) {
-        for (int i = position + 1;; i += 1) {
-          if ((i + 1) % 8 == 0) break;
+        for (int i = position + 1;; i++) {
+          if (i % 8 == 0) break;
           if (validReversal[i]) {
             board[position] = white;
             position = i;
@@ -532,8 +714,8 @@ void downReversal() {
   if (down_state[0] == HIGH) {
     if (down_state[0] != down_state[1]) {
       if (position % 8 != 0) {
-        for (int i = position - 1;; i -= 1) {
-          if (i % 8 == 0) break;
+        for (int i = position - 1;; i--) {
+          if ((i + 1) % 8 == 0) break;
           if (validReversal[i]) {
             board[position] = white;
             position = i;
@@ -621,6 +803,9 @@ void enterReversal() {
         } 
       }
 
+      flip();
+      checkReversal();
+
       int prevPosition = position;
       for (int i = 0; i < 64; i++) {
         if (board[i] == white && validReversal[i]) {
@@ -633,4 +818,70 @@ void enterReversal() {
     }
   }
   enter_state[1] = enter_state[0];
+}
+
+
+void flip() {
+  uint32_t curColor = board[position];
+
+  int posDirections[][4] = {{1, position + (8 - position % 8)}, {7, 64}, {8, 64}, {9, 64}};
+  int negDirections[][4] = {{1, position % 8}, {7, position}, {8, position}, {9, position}};
+
+  for (int k = 0; k < 4; k++) {
+    for (int i = position - negDirections[k][0]; i >= position - negDirections[k][1]; i -= negDirections[k][0]) {
+      if (board[i] == curColor) break;
+      if (board[i] == white) {
+        for (int j = i + negDirections[k][0]; j < position; j += negDirections[k][0]) {
+          if (curColor == red) board[j] = blue;
+          else if (curColor == blue) board[j] = red; 
+        }
+        break;
+      }
+      board[i] = curColor;
+    }
+  }
+
+  for (int k = 0; k < 4; k++) {
+    for (int i = position + posDirections[k][0]; i <= posDirections[k][1]; i += posDirections[k][0]) {
+      if (board[i] == curColor) break;
+      if (board[i] == white) {
+        for (int j = i - posDirections[k][0]; j > position; j -= posDirections[k][0]) {
+          if (curColor == red) board[j] = blue;
+          else if (curColor == blue) board[j] = red; 
+        }
+        break;
+      }
+      board[i] = curColor;
+    }
+  }
+}
+
+
+void checkReversal() {
+  int countValid = 0;
+  int redCount = 0;
+  int blueCount = 0;
+  uint32_t endColor;
+  
+  for (int i = 0; i < 64; i++) {
+    if (validReversal[i] == true) {
+      countValid++;
+    }
+    if (board[i] == blue) blueCount++;
+    if (board[i] == red) redCount++;
+  }
+  if (countValid == 0) {
+    if (blueCount > redCount) {
+      endColor = blue;
+    }
+    else if (redCount > blueCount) {
+      endColor = red;
+    }
+    else {
+      endColor = purple;
+    }
+    for (int i = 0; i < 64; i++) {
+      board[i] = endColor;
+    }
+  }
 }
