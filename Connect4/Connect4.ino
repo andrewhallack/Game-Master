@@ -55,7 +55,7 @@ void setup() {
 
   strip.begin();           // INITIALIZE NeoPixel strip object (REQUIRED)
   strip.show();            // Turn OFF all pixels ASAP
-  strip.setBrightness(12); // Set BRIGHTNESS to about 1/5 (max = 255)
+  strip.setBrightness(100); // Set BRIGHTNESS to about 1/5 (max = 255)
 
   pinMode(RIGHT_PIN, INPUT);
   pinMode(LEFT_PIN, INPUT);
@@ -693,8 +693,8 @@ void upReversal() {
   if (up_state[0] == HIGH) {
     if (up_state[0] != up_state[1]) {
       if ((position + 1) % 8 != 0) {
-        for (int i = position + 1;; i += 1) {
-          if ((i + 1) % 8 == 0) break;
+        for (int i = position + 1;; i++) {
+          if (i % 8 == 0) break;
           if (validReversal[i]) {
             board[position] = white;
             position = i;
@@ -714,8 +714,8 @@ void downReversal() {
   if (down_state[0] == HIGH) {
     if (down_state[0] != down_state[1]) {
       if (position % 8 != 0) {
-        for (int i = position - 1;; i -= 1) {
-          if (i % 8 == 0) break;
+        for (int i = position - 1;; i--) {
+          if ((i + 1) % 8 == 0) break;
           if (validReversal[i]) {
             board[position] = white;
             position = i;
@@ -816,3 +816,35 @@ void enterReversal() {
   }
   enter_state[1] = enter_state[0];
 }
+
+//void flipReversal(int start)
+//{
+//  int directions[][5] = {{64, 8, 7, 64, 1}, // i max, i iterator, j subtraction, j max subtraction, j iterator
+//                          {8, 1, 0, 8, 8}, 
+//                          {33, 8, 0, 9, 9},
+//                          {40, 8, 0, 7, 7}};
+//
+//  
+//    for (int d = 0; d < 4; d++) {
+//      int count = 0;
+//      for (int i = start; i < directions[d][0]; i += directions[d][1]) {
+//        count = 0;
+//        for (int j = i - directions[d][2]; j < 64 - (directions[d][3] - i); j += directions[d][4]) {
+//           if (player) {
+//            if (board[j] == blue) count++;
+//            else count = 0;
+//          }
+//          else {
+//            if (board[j] == red) count++;
+//            else count = 0;
+//          }
+//          if (count >= 4) {
+//            endScreen(false);
+//            return true;
+//          }
+//        }
+//      }
+//    }
+//    return false;
+//  }
+//}
